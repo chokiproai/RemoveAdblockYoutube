@@ -11,27 +11,13 @@
 // @grant        none
 // ==/UserScript==
 (function() {
-    //
-    //      Config
-    //
+    const config = {
+        adblocker: true,
+        removePopup: true,
+        debug: true,
+    };
 
-    // Enable The Undetected Adblocker
-    const adblocker = true;
-
-    // Enable The Popup remover
-    const removePopup = true;
-
-    // Enable debug messages into the console
-    const debug = true;
-
-    //
-    //      CODE
-    //
-
-    // Specify domains and JSON paths to remove
-    const domainsToRemove = [
-        '*.youtube-nocookie.com/*'
-    ];
+    const domainsToRemove = ['*.youtube-nocookie.com/*'];
     const jsonPathsToRemove = [
         'playerResponse.adPlacements',
         'playerResponse.playerAds',
@@ -41,7 +27,6 @@
         'auxiliaryUi.messageRenderers.enforcementMessageViewModel'
     ];
 
-    // Observe config
     const observerConfig = {
         childList: true,
         subtree: true
@@ -57,77 +42,101 @@
         view: window
     });
 
-    //This is used to check if the video has been unpaused already
-    let unpausedAfterSkip = 0;
+    const mouseEvent = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+    });
 
-    if (debug) console.log("Remove Adblock Thing: Remove Adblock Thing: Script started");
-    // Old variable but could work in some cases
+    if (config.debug) console.log("Remove Adblock Thing: Script started");
     window.__ytplayer_adblockDetected = false;
 
-    if (adblocker) addblocker();
-    if (removePopup) newPopupRemover();
+    if (config.adblocker) removeAdblockerStuff();
+    if (config.removePopup) removePopups();
 
-    // New popupRemover function
-    function newPopupRemover() {
+    const observer = new MutationObserver(() => {
+        removeJsonPaths(domainsToRemove, jsonPathsToRemove);
+    });
+
+    observer.observe(document.body, observerConfig);
+
+    function removePopups() {
         setInterval(() => {
+            const fullScreenButton = document.querySelector(".ytp-fullscreen-button");
+            const modalOverlay = document.querySelector("tp-yt-iron-overlay-backdrop");
+            const popup = document.querySelector(".style-scope ytd-enforcement-message-view-model");
             const elementToRemove = document.querySelector('tp-yt-paper-dialog');
-            if (elementToRemove) {
-                elementToRemove.remove();
-                setTimeout(() => {
-                    const playButton = document.querySelector('.ytp-play-button');
-                    if (playButton) {
-                        playButton.click();
-                    } else {
-                        console.log('Không tìm thấy nút phát.');
-                    }
-                }, 1000);
-            } else {
-                console.log('Không tìm thấy phần tử cần xóa.');
+            const popupButton = document.getElementById("dismiss-button");
+
+            const video1 = document.querySelector("#movie_player > video.html5-main-video");
+            const video2 = document.querySelector("#movie_player > .html5-video-container > video");
+
+            const bodyStyle = document.body.style;
+            bodyStyle.setProperty('overflow-y', 'scroll', 'important');
+
+            if (modalOverlay) {
+                modalOverlay.removeAttribute("opened");
+                modalOverlay.remove();
             }
-        }, 100);
+
+            if (popup) {
+                if (config.debug) console.log("Remove Adblock Thing: Popup detected, removing...");
+                if (popupButton) popupButton.click();
+                popup.remove();
+                unpausedAfterSkip = 2;
+
+                fullScreenButton.dispatchEvent(mouseEvent);
+
+                setTimeout(() => {
+                    fullScreenButton.dispatchEvent(mouseEvent);
+                }, 500);
+
+                if (config.debug) console.log("Remove Adblock Thing: Popup removed");
+            }
+
+            if (!unpausedAfterSkip > 0) return;
+
+            if (video1) {
+                if (video1.paused) unPauseVideo();
+                else if (unpausedAfterSkip > 0) unpausedAfterSkip--;
+            }
+            if (video2) {
+                if (video2.paused) unPauseVideo();
+                else if (unpausedAfterSkip > 0) unpausedAfterSkip--;
+            }
+
+        }, 1000);
     }
 
-    // undetected adblocker method
-    function addblocker() {
+    function removeAdblockerStuff() {
         setInterval(() => {
             const skipBtn = document.querySelector('.videoAdUiSkipButton,.ytp-ad-skip-button');
-            const ad = [...document.querySelectorAll('.ad-showing')][0];
+            const ad = document.querySelector('.ad-showing');
             const sidAd = document.querySelector('ytd-action-companion-ad-renderer');
             const displayAd = document.querySelector('div#root.style-scope.ytd-display-ad-renderer.yt-simple-endpoint');
             const sparklesContainer = document.querySelector('div#sparkles-container.style-scope.ytd-promoted-sparkles-web-renderer');
             const mainContainer = document.querySelector('div#main-container.style-scope.ytd-promoted-video-renderer');
             const feedAd = document.querySelector('ytd-in-feed-ad-layout-renderer');
+            const mastheadAd = document.querySelector('.ytd-video-masthead-ad-v3-renderer');
+
             if (ad) {
-                document.querySelector('video').playbackRate = 10;
-                document.querySelector('video').volume = 0;
-                if (skipBtn) {
-                    skipBtn.click();
-                }
+                const video = document.querySelector('video');
+                video.playbackRate = 10;
+                video.volume = 0;
+                video.currentTime = video.duration;
+                skipBtn?.click();
             }
-            if (sidAd) {
-                sidAd.remove();
-            }
-            if (displayAd) {
-                displayAd.remove();
-            }
-            if (sparklesContainer) {
-                sparklesContainer.remove();
-            }
-            if (mainContainer) {
-                mainContainer.remove();
-            }
-            if (feedAd) {
-                feedAd.remove();
-            }
+
+            [sidAd, displayAd, sparklesContainer, mainContainer, feedAd, mastheadAd].forEach(el => {
+                if (el) el.remove();
+            });
         }, 50);
     }
 
-    // Unpause the video Works most of the time
     function unPauseVideo() {
-        // Simulate pressing the "k" key to unpause the video
         document.dispatchEvent(keyEvent);
         unpausedAfterSkip = 0;
-        if (debug) console.log("Remove Adblock Thing: Unpaused video using 'k' key");
+        if (config.debug) console.log("Remove Adblock Thing: Unpaused video using 'k' key");
     }
 
     function removeJsonPaths(domains, jsonPaths) {
@@ -135,24 +144,12 @@
         if (!domains.includes(currentDomain)) return;
 
         jsonPaths.forEach(jsonPath => {
-            const pathParts = jsonPath.split('.');
             let obj = window;
-            for (const part of pathParts) {
-                if (obj.hasOwnProperty(part)) {
-                    obj = obj[part];
-                } else {
-                    break;
-                }
+            for (const part of jsonPath.split('.')) {
+                if (!obj.hasOwnProperty(part)) break;
+                obj = obj[part];
             }
             obj = undefined;
         });
     }
-
-    // Observe and remove ads when new content is loaded dynamically
-    const observer = new MutationObserver(() => {
-        removeJsonPaths(domainsToRemove, jsonPathsToRemove);
-    });
-
-    if (removePopup) observer.observe(document.body, observerConfig);
-
 })();
