@@ -1,5 +1,5 @@
 # Remove the Adblock Popup from YOUTUBE
-[![picture](https://github.com/chokiproai/RemoveAdblockYoutube/blob/main/Thumnail.jpg?raw=true)
+![picture](https://github.com/chokiproai/RemoveAdblockYoutube/blob/main/Thumnail.jpg?raw=true)
 ## Introduction
 
 This repository contains a userscript designed to remove the annoying "Ad blocker are not allowed on Youtube" popup. Follow the instructions below to get started.
@@ -11,7 +11,6 @@ We also have an undetected way of skipping ads if you get blocked from the video
 2. [Installation](#installation)
 3. [How to bypass the video player ban from using an ad blocker](#how-to-bypass-the-video-player-ban-from-using-an-ad-blocker)
 4. [Usage](#usage)
-5. [Contribution](#contribution)
 6. [License](#license)
 
 ## Installation
